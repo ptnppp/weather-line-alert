@@ -14,13 +14,34 @@ const TEST_MODE = true; // 🔹 เปลี่ยนเป็น false ถ้�
 
 app.post("/webhook", async (req, res) => {
   const event = req.body.events?.[0];
-  if (event?.type === "follow") {
-    const userId = event.source.userId;
-    await pool.query(
-      "INSERT INTO line_users (user_id) VALUES ($1) ON CONFLICT DO NOTHING",
+
+  if (!event) return res.sendStatus(200);
+
+  // ✅ ดึง userId จาก source
+  const userId = event.source?.userId;
+
+  if (userId) {
+    // ✅ ตรวจสอบว่า userId มีอยู่แล้วหรือยัง
+    const checkUser = await pool.query(
+      "SELECT user_id FROM line_users WHERE user_id = $1",
       [userId]
     );
+
+    if (checkUser.rowCount === 0) {
+      await pool.query("INSERT INTO line_users (user_id) VALUES ($1)", [
+        userId,
+      ]);
+      console.log(`✅ เพิ่ม userId ใหม่: ${userId}`);
+    } else {
+      console.log(`ℹ️ userId นี้มีอยู่แล้ว: ${userId}`);
+    }
   }
+
+  // ✅ ตอบกลับเฉพาะเมื่อเป็นข้อความ
+  if (event.type === "message" && event.message.type === "text") {
+    console.log(`📩 ข้อความจาก ${userId}: ${event.message.text}`);
+  }
+
   res.sendStatus(200);
 });
 
