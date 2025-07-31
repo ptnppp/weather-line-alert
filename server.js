@@ -99,8 +99,8 @@ async function checkWeatherAndPush() {
       const temp = data.main.temp;
 
       console.log(`🌤 Checking ${d.name}: ${weather}`);
-
-      if (["Clouds", "Rain", "Thunderstorm"].includes(weather)) {
+      // "Clouds", for test
+      if (["Rain", "Thunderstorm"].includes(weather)) {
         messages.push(`📍 ${d.name} - ${description}, ${temp}°C`);
       }
     } catch (err) {
