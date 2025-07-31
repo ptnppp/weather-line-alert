@@ -17,6 +17,18 @@ app.get("/", (req, res) => {
   res.send("✅ Weather Alert Server is running!");
 });
 
+// ✅ Route สำหรับทดสอบ Push Message
+app.get("/test-push", async (req, res) => {
+  await pushMessageToAllUsers("🚀 ทดสอบ Push Message สำเร็จ!");
+  res.send("✅ Push message sent!");
+});
+
+// ✅ Route สำหรับทดสอบ Weather API
+app.get("/test-weather", async (req, res) => {
+  await checkWeatherAndPush();
+  res.send("✅ Weather checked!");
+});
+
 app.post("/webhook", async (req, res) => {
   const event = req.body.events?.[0];
   if (!event) return res.sendStatus(200);
@@ -47,18 +59,21 @@ app.post("/webhook", async (req, res) => {
 });
 
 async function pushMessage(to, text) {
-  await axios.post(
-    "https://api.line.me/v2/bot/message/push",
-    {
-      to,
-      messages: [{ type: "text", text }],
-    },
-    { headers: { Authorization: `Bearer ${process.env.LINE_CHANNEL_TOKEN}` } }
-  );
+  try {
+    await axios.post(
+      "https://api.line.me/v2/bot/message/push",
+      { to, messages: [{ type: "text", text }] },
+      { headers: { Authorization: `Bearer ${process.env.LINE_CHANNEL_TOKEN}` } }
+    );
+    console.log(`✅ ส่งข้อความไปยัง user: ${to}`);
+  } catch (err) {
+    console.error("❌ Push message error:", err.response?.data || err.message);
+  }
 }
 
 async function pushMessageToAllUsers(message) {
   const users = await pool.query("SELECT user_id FROM line_users");
+  console.log(`📢 กำลังส่งข้อความถึง ${users.rowCount} คน`);
   for (const row of users.rows) {
     await pushMessage(row.user_id, message);
   }
@@ -66,21 +81,28 @@ async function pushMessageToAllUsers(message) {
 
 async function checkWeatherAndPush() {
   for (const d of districts) {
-    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${d.lat}&lon=${d.lng}&appid=${process.env.WEATHER_KEY}&units=metric&lang=th`;
-    const { data } = await axios.get(url);
-    const weather = data.weather[0].main;
+    try {
+      const url = `https://api.openweathermap.org/data/2.5/weather?lat=${d.lat}&lon=${d.lng}&appid=${process.env.WEATHER_KEY}&units=metric&lang=th`;
+      const { data } = await axios.get(url);
+      const weather = data.weather[0].main;
 
-    if (["Rain", "Thunderstorm"].includes(weather)) {
-      const message = `⛈️ แจ้งเตือนฝนตก!
+      console.log(`🌤 Checking ${d.name}: ${weather}`);
+
+      if (["Rain", "Thunderstorm"].includes(weather)) {
+        const message = `⛈️ แจ้งเตือนฝนตก!
 📍 พื้นที่: ${d.name}
 🌧️ สภาพอากาศ: ${data.weather[0].description}
 🌡️ อุณหภูมิ: ${data.main.temp}°C
 โปรดวางแผนการเดินทางและพกร่มด้วยนะครับ`;
-      await pushMessageToAllUsers(message);
+        await pushMessageToAllUsers(message);
+      }
+    } catch (err) {
+      console.error(`❌ Error checking ${d.name}:`, err.message);
     }
   }
 }
 
+// ✅ ถ้า TEST_MODE = true → เช็กทุก 1 นาที
 cron.schedule(TEST_MODE ? "* * * * *" : "*/10 * * * *", checkWeatherAndPush);
 
 // ✅ ใช้ PORT ของ Railway
