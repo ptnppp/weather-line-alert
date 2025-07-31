@@ -88,25 +88,38 @@ async function pushMessageToAllUsers(message) {
 }
 
 async function checkWeatherAndPush() {
+  let messages = [];
+
   for (const d of districts) {
     try {
       const url = `https://api.openweathermap.org/data/2.5/weather?lat=${d.lat}&lon=${d.lng}&appid=${process.env.WEATHER_KEY}&units=metric&lang=th`;
       const { data } = await axios.get(url);
       const weather = data.weather[0].main;
+      const description = data.weather[0].description;
+      const temp = data.main.temp;
 
       console.log(`🌤 Checking ${d.name}: ${weather}`);
 
-      if (["Clouds", "Rain", "Thunderstorm"].includes(weather)) {
-        const message = `⛈️ แจ้งเตือนฝนตก!
-📍 พื้นที่: ${d.name}
-🌧️ สภาพอากาศ: ${data.weather[0].description}
-🌡️ อุณหภูมิ: ${data.main.temp}°C
-โปรดวางแผนการเดินทางและพกร่มด้วยนะครับ`;
-        await pushMessageToAllUsers(message);
+      if (["Rain", "Thunderstorm"].includes(weather)) {
+        messages.push(`📍 ${d.name} - ${description}, ${temp}°C`);
       }
     } catch (err) {
       console.error(`❌ Error checking ${d.name}:`, err.message);
     }
+  }
+
+  if (messages.length > 0) {
+    const finalMessage = `⛈️ แจ้งเตือนฝนตกในพื้นที่:\n\n${messages.join("\n")}
+
+🔎 ดูเรดาร์ฝนแบบเรียลไทม์:
+🌐 กรมอุตุนิยมวิทยา: https://www.tmd.go.th/weatherRadar
+🌐 Windy (Interactive Map): https://www.windy.com/?rain,13.75,100.50,10
+
+⚠️ โปรดระวังการเดินทางและพกร่มด้วยนะครับ`;
+
+    await pushMessageToAllUsers(finalMessage);
+  } else {
+    console.log("☀️ ไม่มีฝนตกในพื้นที่ใด");
   }
 }
 
