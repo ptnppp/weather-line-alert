@@ -62,8 +62,16 @@ async function pushMessage(to, text) {
   try {
     await axios.post(
       "https://api.line.me/v2/bot/message/push",
-      { to, messages: [{ type: "text", text }] },
-      { headers: { Authorization: `Bearer ${process.env.LINE_CHANNEL_TOKEN}` } }
+      {
+        to: to,
+        messages: [{ type: "text", text: text }],
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.LINE_CHANNEL_TOKEN}`,
+        },
+      }
     );
     console.log(`✅ ส่งข้อความไปยัง user: ${to}`);
   } catch (err) {
