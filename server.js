@@ -9,6 +9,9 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
+// ✅ CONFIG เปิด/ปิดโหมดทดสอบ
+const TEST_MODE = true; // 🔹 เปลี่ยนเป็น false ถ้าไม่อยากทดสอบทุก 1 นาที
+
 app.post("/webhook", async (req, res) => {
   const event = req.body.events?.[0];
   if (event?.type === "follow") {
@@ -26,7 +29,7 @@ async function pushMessage(to, text) {
     "https://api.line.me/v2/bot/message/push",
     {
       to,
-      messages: [{ type: "text", text }]
+      messages: [{ type: "text", text }],
     },
     { headers: { Authorization: `Bearer ${process.env.LINE_CHANNEL_TOKEN}` } }
   );
@@ -56,6 +59,14 @@ async function checkWeatherAndPush() {
   }
 }
 
-cron.schedule("*/10 * * * *", checkWeatherAndPush);
+// ✅ ถ้า TEST_MODE = true → เช็กทุก 1 นาที
+// ✅ ถ้า TEST_MODE = false → เช็กทุก 10 นาที
+cron.schedule(TEST_MODE ? "* * * * *" : "*/10 * * * *", checkWeatherAndPush);
 
-app.listen(3000, () => console.log("✅ Server started on port 3000"));
+app.listen(3000, () =>
+  console.log(
+    `✅ Server started on port 3000 (${
+      TEST_MODE ? "TEST MODE (1min)" : "NORMAL MODE (10min)"
+    })`
+  )
+);
