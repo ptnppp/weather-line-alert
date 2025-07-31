@@ -10,18 +10,20 @@ const app = express();
 app.use(express.json());
 
 // ✅ CONFIG เปิด/ปิดโหมดทดสอบ
-const TEST_MODE = true; // 🔹 เปลี่ยนเป็น false ถ้าไม่อยากทดสอบทุก 1 นาที
+const TEST_MODE = true; // เปลี่ยนเป็น false ถ้าไม่อยากทดสอบทุก 1 นาที
+
+// ✅ Route สำหรับตรวจว่า Server ทำงาน
+app.get("/", (req, res) => {
+  res.send("✅ Weather Alert Server is running!");
+});
 
 app.post("/webhook", async (req, res) => {
   const event = req.body.events?.[0];
-
   if (!event) return res.sendStatus(200);
 
-  // ✅ ดึง userId จาก source
   const userId = event.source?.userId;
 
   if (userId) {
-    // ✅ ตรวจสอบว่า userId มีอยู่แล้วหรือยัง
     const checkUser = await pool.query(
       "SELECT user_id FROM line_users WHERE user_id = $1",
       [userId]
@@ -37,7 +39,6 @@ app.post("/webhook", async (req, res) => {
     }
   }
 
-  // ✅ ตอบกลับเฉพาะเมื่อเป็นข้อความ
   if (event.type === "message" && event.message.type === "text") {
     console.log(`📩 ข้อความจาก ${userId}: ${event.message.text}`);
   }
@@ -80,13 +81,13 @@ async function checkWeatherAndPush() {
   }
 }
 
-// ✅ ถ้า TEST_MODE = true → เช็กทุก 1 นาที
-// ✅ ถ้า TEST_MODE = false → เช็กทุก 10 นาที
 cron.schedule(TEST_MODE ? "* * * * *" : "*/10 * * * *", checkWeatherAndPush);
 
-app.listen(3000, () =>
+// ✅ ใช้ PORT ของ Railway
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () =>
   console.log(
-    `✅ Server started on port 3000 (${
+    `✅ Server started on port ${PORT} (${
       TEST_MODE ? "TEST MODE (1min)" : "NORMAL MODE (10min)"
     })`
   )
