@@ -10,7 +10,7 @@ const app = express();
 app.use(express.json());
 
 // ✅ CONFIG เปิด/ปิดโหมดทดสอบ
-const TEST_MODE = true; // เปลี่ยนเป็น false ถ้าไม่อยากทดสอบทุก 1 นาที
+const TEST_MODE = false; // เปลี่ยนเป็น false ถ้าไม่อยากทดสอบทุก 1 นาที
 
 // ✅ Route สำหรับตรวจว่า Server ทำงาน
 app.get("/", (req, res) => {
@@ -96,7 +96,7 @@ async function checkWeatherAndPush() {
 
       console.log(`🌤 Checking ${d.name}: ${weather}`);
 
-      if (["Rain", "Thunderstorm"].includes(weather)) {
+      if (["Clouds", "Rain", "Thunderstorm"].includes(weather)) {
         const message = `⛈️ แจ้งเตือนฝนตก!
 📍 พื้นที่: ${d.name}
 🌧️ สภาพอากาศ: ${data.weather[0].description}
