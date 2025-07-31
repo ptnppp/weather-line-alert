@@ -1,0 +1,13 @@
+{
+  "name": "weather-line-alert",
+  "version": "1.0.0",
+  "main": "server.js",
+  "type": "module",
+  "dependencies": {
+    "axios": "^1.6.7",
+    "express": "^4.18.2",
+    "pg": "^8.11.1",
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.3.1"
+  }
+}
